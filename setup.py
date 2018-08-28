@@ -3,15 +3,15 @@ from setuptools import setup, find_packages
 version = '0.1.0'
 
 setup(
-    name='expect',
+    name='pyexpect',
     version=version,
     description='Python validate tool for json or other else',
-    keywords='python expect json validate',
+    keywords='python json data validate',
     author='mrhack',
     author_email='hdg1988@gmail.com',
     maintainer='mrhack',
     maintainer_email='hdg1988@gmail.com',
-    url='https://github.com/mrhack/expect',
+    url='https://github.com/mrhack/pyexpect',
     platforms=["all"],
     packages=find_packages(),
     zip_safe=False,
