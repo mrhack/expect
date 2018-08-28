@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.1.0'
+version = '0.1.1'
 
 setup(
     name='py-expect',
@@ -13,7 +13,7 @@ setup(
     maintainer_email='hdg1988@gmail.com',
     url='https://github.com/mrhack/py-expect',
     platforms=["all"],
-    packages=find_packages(),
+    packages=['py_expect'],
     zip_safe=False,
     classifiers=[
         'Development Status :: 4 - Beta',

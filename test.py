@@ -1,6 +1,6 @@
 #!coding=utf8
 import unittest
-from expect import *
+from py_expect import *
 
 
 class ExpectTest(unittest.TestCase):
