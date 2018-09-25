@@ -1,4 +1,5 @@
 NORMAL_TYPES = (int, float, bool, str, unicode)
+NUMBER_TYPES = (int, float, long, complex)
 
 
 class ExpectError(RuntimeError):
@@ -6,12 +7,19 @@ class ExpectError(RuntimeError):
 
 
 class _Expect(object):
+    '''
+    Base Class
+    '''
 
     def validate(self, val):
         raise NotImplementedError
 
 
 class ExpectBool(_Expect):
+    '''
+    bool value expect
+    '''
+
     def __init__(self, value=None, noneable=False):
         self.noneable = noneable
         self.value = value
@@ -26,6 +34,10 @@ class ExpectBool(_Expect):
 
 
 class ExpectNone(_Expect):
+    '''
+    None value expect
+    '''
+
     def __init__(self):
         pass
 
@@ -34,20 +46,25 @@ class ExpectNone(_Expect):
 
 
 class ExpectNumber(_Expect):
+    '''
+    number value expect, include int, long, float, complex
+    '''
+
     def __init__(self, type=None, value=None, min=None, max=None, enum=None, noneable=False):
         self.min = min
         self.max = max
         self.enum = enum
         self.value = value
         self.noneable = noneable
-        self.types = [type] if type else [int, float]
+        self.types = [type] if type else NUMBER_TYPES
 
     def validate(self, val):
+        if self.noneable and val is None:
+            return
+
         if self.value is not None:
             assert self.value == val, u'expect number `{}`, but got `{}`'.format(self.value, val)
 
-        if self.noneable and val is None:
-            return
         assert type(val) in self.types, u'except {}, but got {}'.format(self.types if len(self.types) > 1 else self.types[0], type(val))
 
         if self.min is not None:
@@ -63,13 +80,34 @@ class ExpectInt(ExpectNumber):
         super(ExpectInt, self).__init__(type=int, **kws)
 
 
+class ExpectLong(ExpectNumber):
+    def __init__(self, **kws):
+        super(ExpectLong, self).__init__(type=long, **kws)
+
+
 class ExpectFloat(ExpectNumber):
     def __init__(self, **kws):
         super(ExpectFloat, self).__init__(type=float, **kws)
 
 
+class ExpectComplex(ExpectNumber):
+    def __init__(self, **kws):
+        super(ExpectComplex, self).__init__(type=complex, **kws)
+
+
 class ExpectStr(_Expect):
+    '''
+    expect str value
+    '''
+
     def __init__(self, value=None, min_length=None, max_length=None, enum=None, noneable=False):
+        '''
+        :param value: expect the exact str value.
+        :param min_length: min length of the str value.
+        :param max_length: max length of the str value.
+        :param enum: expect one of the value in enum.
+        :param noneable: check if none is valid.
+        '''
         self.min_length = min_length
         self.max_length = max_length
         self.value = value
@@ -77,11 +115,12 @@ class ExpectStr(_Expect):
         self.noneable = noneable
 
     def validate(self, val):
+        if self.noneable and val is None:
+            return
+
         if self.value is not None:
             assert self.value == val, u'expect str `{}`, but got `{}`'.format(self.value, val)
 
-        if self.noneable and val is None:
-            return
         assert type(val) in [str, unicode], u'except {}, but got {}'.format(str, type(val))
 
         if self.min_length is not None:
@@ -95,7 +134,9 @@ class ExpectStr(_Expect):
 class ExpectDict(_Expect):
     def __init__(self, item={}, strict=False, noneable=False):
         '''
-        if strict is True, must match all the keys
+        :param item: match template
+        :param strict: if strict is True, target value must match all the keys of item
+        :param noneable: check if none is valid
         '''
         self.item = item
         self.strict = strict
@@ -106,7 +147,7 @@ class ExpectDict(_Expect):
     def validate(self, val):
         if self.noneable and val is None:
             return
-        assert type(val) == dict, 'except dict'
+        assert type(val) == dict, 'except dict, but got `{}`'.format(type(val))
         if self.strict:
             assert len(self.item.keys()) == len(val.keys()), u'dict keys `{}` is not match `{}` in strict mode'.format(val.keys(), self.item.keys())
         for k, v in self.item.iteritems():
@@ -128,6 +169,12 @@ class ExpectDict(_Expect):
 
 class ExpectList(_Expect):
     def __init__(self, item=None, min_length=None, max_length=None, noneable=False):
+        '''
+        :param item: list item match template. It can be Python type, Expect instance or constant value.
+        :param min_length: min length of list
+        :param max_length: max length of list
+        :param noneable: check if none is valid
+        '''
         self.min_length = min_length
         self.max_length = max_length
         self.noneable = noneable
@@ -140,6 +187,7 @@ class ExpectList(_Expect):
     def validate(self, val):
         if self.noneable and val is None:
             return
+
         assert type(val) in [list, tuple], 'list item except {} or {}, but got {}'.format(list, tuple, type(val))
         if self.min_length is not None:
             assert len(val) >= self.min_length, 'list or tuple length {} is less then min length {}'.format(len(val), self.min_length)
@@ -151,14 +199,14 @@ class ExpectList(_Expect):
                 try:
                     self.expect.validate(item)
                 except AssertionError as err:
-                    raise AssertionError(u'list item ' + err.message)
-        elif type(self.item) in NORMAL_TYPES:
-            for item in val:
-                assert item == self.item, 'list item expect `{}`, but got `{}`'.format(self.item, item)
+                    raise AssertionError(u'list item error: ' + err.message)
 
 
 class ExpectInstance(_Expect):
     def __init__(self, _class):
+        '''
+        :param _class: expect value to be instance of _class
+        '''
         self._class = _class
 
     def validate(self, val):
@@ -172,18 +220,14 @@ class Expect(_Expect):
             self.expect = ExpectDict(value, **kws)
         elif type(value) in [list, tuple]:
             self.expect = ExpectList(value[0] if len(value) else None, **kws)
-        elif type(value) == int:
-            self.expect = ExpectInt(value=value, **kws)
-        elif type(value) == float:
-            self.expect = ExpectFloat(value=value, **kws)
+        elif type(value) in NUMBER_TYPES:
+            self.expect = ExpectNumber(type=type(value), value=value, **kws)
         elif type(value) == str:
             self.expect = ExpectStr(value=value, **kws)
         elif type(value) == bool:
             self.expect = ExpectBool(value=value, **kws)
-        elif value == int:
-            self.expect = ExpectInt(**kws)
-        elif value == float:
-            self.expect = ExpectFloat(**kws)
+        elif value in NUMBER_TYPES:
+            self.expect = ExpectNumber(type=value, **kws)
         elif value == str:
             self.expect = ExpectStr(**kws)
         elif value == bool:

@@ -45,6 +45,41 @@ class ExpectTest(unittest.TestCase):
         with self.assertRaises(AssertionError) as error:
             ExpectFloat().validate(None)
 
+    def test_long(self):
+        ExpectLong().validate(1l)
+
+        ExpectLong(value=1l).validate(1l)
+        with self.assertRaises(AssertionError) as error:
+            ExpectLong(value=2l).validate(1l)
+
+        ExpectLong(min=1l, max=2l).validate(1l)
+        ExpectLong(min=1l, max=2l).validate(2l)
+        with self.assertRaises(AssertionError) as error:
+            ExpectLong(min=1l, max=2l).validate(0l)
+
+        ExpectLong(enum=(1l, 2l)).validate(1l)
+        with self.assertRaises(AssertionError) as error:
+            ExpectLong(enum=(1l, 2l)).validate(3l)
+
+        ExpectLong(noneable=True).validate(None)
+        with self.assertRaises(AssertionError) as error:
+            ExpectLong().validate(None)
+
+    def test_complex(self):
+        ExpectComplex().validate(1.j)
+
+        ExpectComplex(value=1.j).validate(1.j)
+        with self.assertRaises(AssertionError) as error:
+            ExpectComplex(value=2j).validate(1.j)
+
+        ExpectComplex(enum=(1.j, 2j)).validate(1.j)
+        with self.assertRaises(AssertionError) as error:
+            ExpectComplex(enum=(1.j, 2j)).validate(3j)
+
+        ExpectComplex(noneable=True).validate(None)
+        with self.assertRaises(AssertionError) as error:
+            ExpectComplex().validate(None)
+
     def test_str(self):
         ExpectStr().validate("test_str")
         ExpectStr(value="test_str").validate("test_str")
